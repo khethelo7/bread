@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Streetwear Shop — MVP</title>
+  <meta name="description" content="Skate/grunge e‑commerce MVP with cart, invoice download, and WhatsApp handoff. Pure HTML/CSS/JS." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;800&family=Oswald:wght@300;400;600&display=swap" rel="stylesheet">
+  <!-- jsPDF for client‑side invoice PDF generation -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-/8b+Jk7m5o6p9XlQqjQqG6o3xKJr+6t7QbYc4HnVd8+7Gx1a0z2dQhIqVxH0b8TqU8x4K8C8JrR3m8Sg7g7K9Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <style>
+    /* =====================
+       RESET & THEME TOKENS
+       ===================== */
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--ink);}
+    :root{
+      --bg:#0b0b0b;           /* pitch black-ish */
+      --surface:#111;         /* cards */
+      --ink:#f1f1f1;
+      --muted:#b3b3b3;
+      --accent:#4df2c7;       /* toxic mint */
+      --accent-2:#ff3b3b;     /* skate red */
+      --ring:0 0 0 2px rgba(77,242,199,.35);
+    }
+
+    /* Noise + subtle grit overlay for grunge feel */
+    body::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(rgba(255,255,255,0.06) 1px,transparent 1px),radial-gradient(rgba(255,255,255,0.04) 1px,transparent 1px);background-size:3px 3px, 7px 7px;mix-blend-mode:overlay; opacity:.5;}
+
+    a{color:var(--ink);text-decoration:none}
+    img{max-width:100%;display:block}
+    button{font:inherit}
+
+    /* =====================
+       NAVBAR
+       ===================== */
+    .nav{position:sticky;top:0;z-index:40;background:linear-gradient(#121212,#0e0e0e);border-bottom:1px solid #1b1b1b;backdrop-filter:saturate(1.2) blur(6px)}
+    .nav-inner{max-width:1200px;margin:auto;display:flex;align-items:center;justify-content:space-between;padding:14px 18px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand-mark{font-family:"Bebas Neue", Oswald, Impact, sans-serif;letter-spacing:1px;font-size:28px;line-height:1;color:var(--ink);position:relative}
+    .brand-mark::after{content:"";position:absolute;left:-6px;right:-6px;bottom:-2px;height:10px;background:conic-gradient(from 200deg,transparent 0 70%, rgba(77,242,199,.6) 72% 85%, transparent 86%);filter:blur(6px);opacity:.6}
+    .nav-links{display:flex;gap:18px;align-items:center}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;background:#161616;border:1px solid #1f1f1f;border-radius:999px;transition:all .18s ease}
+    .pill:hover{transform:translateY(-1px);box-shadow:var(--ring)}
+    .cart-btn{position:relative}
+    .cart-count{position:absolute;top:-8px;right:-6px;background:var(--accent-2);color:#fff;border-radius:10px;padding:2px 6px;font-size:12px;line-height:1}
+
+    /* =====================
+       HERO
+       ===================== */
+    .hero{max-width:1200px;margin:24px auto 16px;display:grid;grid-template-columns:1.3fr .7fr;gap:18px;padding:0 18px}
+    .hero-card{background:linear-gradient(180deg,#131313,#0d0d0d);border:1px solid #1d1d1d;border-radius:18px;padding:28px;position:relative;overflow:hidden}
+    .hero-card h1{font-family:"Bebas Neue", Oswald, Impact, sans-serif;font-size:clamp(40px,6vw,84px);margin:0;letter-spacing:1px;text-transform:uppercase}
+    .hero-card p{max-width:60ch;color:var(--muted);margin:10px 0 18px}
+    .spray{position:absolute;inset:auto;bottom:-30px;right:-30px;width:300px;height:300px;background:radial-gradient(circle at 30% 30%, rgba(77,242,199,.25), transparent 60%), radial-gradient(circle at 60% 60%, rgba(255,59,59,.18), transparent 55%);filter:blur(18px);opacity:.9;}
+    .tag{display:inline-block;font-weight:700;letter-spacing:.5px;background:#121212;border:1px dashed #2a2a2a;padding:6px 10px;border-radius:8px}
+
+    .hero-side{border:1px dashed #232323;border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:12px;align-items:flex-start;justify-content:center}
+    .check{display:flex;gap:10px;align-items:flex-start}
+
+    /* =====================
+       GRID
+       ===================== */
+    .wrap{max-width:1200px;margin:0 auto;padding:12px 18px 60px}
+    .section-title{display:flex;align-items:center;gap:12px;margin:18px 0}
+    .section-title h2{font-family:Oswald, Bebas Neue, Impact, sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin:0}
+    .divider{flex:1;height:1px;background:#1f1f1f}
+
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    @media(min-width:720px){.grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
+    @media(min-width:1024px){.grid{grid-template-columns:repeat(4,minmax(0,1fr));}}
+
+    .card{background:linear-gradient(180deg,#141414,#0f0f0f);border:1px solid #1d1d1d;border-radius:16px;overflow:hidden;position:relative;transition:transform .18s ease, box-shadow .18s ease}
+    .card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.4)}
+    .thumb{aspect-ratio:3/4;background:#0c0c0c;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #1b1b1b}
+    .thumb img{width:100%;height:100%;object-fit:cover;filter:grayscale(.1) contrast(1.05)}
+    .info{padding:12px 12px 14px;display:grid;gap:8px}
+    .title{font-weight:700}
+    .price{color:var(--accent)}
+    .add{display:flex;gap:8px}
+    .btn{padding:10px 12px;border-radius:10px;border:1px solid #242424;background:#151515;color:var(--ink);cursor:pointer}
+    .btn:hover{box-shadow:var(--ring)}
+    .btn-primary{background:linear-gradient(180deg,#1a1a1a,#0f0f0f);border-color:#292929}
+    .btn-ghost{background:#0e0e0e;border-style:dashed;color:#dcdcdc}
+
+    /* =====================
+       CART DRAWER
+       ===================== */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:.2s;z-index:60}
+    .overlay.show{opacity:1;visibility:visible}
+    .drawer{position:fixed;top:0;right:-440px;width:440px;max-width:100%;height:100%;background:#0f0f0f;border-left:1px solid #222;transition:right .25s ease;z-index:70;display:flex;flex-direction:column}
+    .drawer.show{right:0}
+    .drawer-header{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid #1c1c1c}
+    .drawer-body{flex:1;overflow:auto;padding:12px}
+    .drawer-footer{padding:12px;border-top:1px solid #1c1c1c;display:grid;gap:8px}
+    .line{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:center;padding:10px;border-bottom:1px dashed #222}
+    .qty{display:inline-flex;align-items:center;border:1px solid #2a2a2a;border-radius:8px}
+    .qty button{width:28px;height:28px;background:#121212;border:0;color:#eee}
+    .qty input{width:42px;text-align:center;background:#0e0e0e;border:0;color:#eee;padding:6px}
+    .total{display:flex;align-items:center;justify-content:space-between;font-weight:800}
+
+    /* =====================
+       MODALS + FORMS
+       ===================== */
+    dialog{border:1px solid #222;background:#0e0e0e;color:var(--ink);border-radius:14px;padding:18px;max-width:520px}
+    .form-grid{display:grid;gap:12px}
+    label{font-size:14px;color:#d6d6d6}
+    input,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #2a2a2a;background:#111;color:#fff}
+    .help{color:#9f9f9f;font-size:12px}
+
+    /* =====================
+       TOAST
+       ===================== */
+    .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#101010;border:1px solid #2a2a2a;border-radius:12px;padding:10px 14px;opacity:0;visibility:hidden;transition:.2s;z-index:80}
+    .toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+
+    /* =====================
+       FOOTER
+       ===================== */
+    footer{border-top:1px solid #1e1e1e;color:#a3a3a3}
+    .foot-inner{max-width:1200px;margin:auto;padding:24px 18px;display:flex;gap:10px;align-items:center;justify-content:space-between}
+    .small{font-size:12px;color:#9a9a9a}
+
+  </style>
+</head>
+<body>
+  <!-- NAV -->
+  <nav class="nav" aria-label="Main">
+    <div class="nav-inner">
+      <div class="brand">
+        <span class="brand-mark" id="brandMark">GLITCH STREET</span>
+        <span class="tag">MVP</span>
+      </div>
+      <div class="nav-links">
+        <a class="pill" href="#shop">Shop</a>
+        <button class="pill cart-btn" id="openCartBtn" aria-haspopup="dialog" aria-controls="cartDrawer" aria-expanded="false">🛒 Cart <span class="cart-count" id="cartCount">0</span></button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <div class="hero-card">
+      <h1>Streetwear that hits different.</h1>
+      <p>Creative grunge aesthetic, skateboard culture vibes. This is a minimal viable storefront you can share today and grow into a full 3D interactive experience later.</p>
+      <div class="add">
+        <a class="btn btn-primary" href="#shop">Browse drops</a>
+        <button class="btn btn-ghost" id="quickAdd">Add a sample tee</button>
+      </div>
+      <div class="spray" aria-hidden="true"></div>
+    </div>
+    <div class="hero-side">
+      <div class="check"><span>✅</span><div><strong>WhatsApp handoff</strong><div class="help">Checkout creates a PDF invoice + opens WhatsApp with a pre‑filled message.</div></div></div>
+      <div class="check"><span>✅</span><div><strong>Client‑side cart</strong><div class="help">LocalStorage keeps the cart between visits. No backend yet.</div></div></div>
+      <div class="check"><span>✅</span><div><strong>Email ready</strong><div class="help">Hook up EmailJS/Netlify later for order confirmations.</div></div></div>
+    </div>
+  </section>
+
+  <!-- GRID -->
+  <main class="wrap">
+    <div class="section-title"><h2 id="shop">Shop</h2><div class="divider"></div></div>
+    <div id="productGrid" class="grid" aria-live="polite"></div>
+  </main>
+
+  <!-- CART DRAWER -->
+  <div class="overlay" id="overlay"></div>
+  <aside class="drawer" id="cartDrawer" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
+    <div class="drawer-header">
+      <strong id="cartTitle">Your Cart</strong>
+      <button class="btn" id="closeCartBtn" aria-label="Close cart">✕</button>
+    </div>
+    <div class="drawer-body" id="cartLines"></div>
+    <div class="drawer-footer">
+      <div class="total"><span>Subtotal</span><span id="cartTotal">R0.00</span></div>
+      <div class="help">Shipping handled via WhatsApp later. Taxes shown on invoice.</div>
+      <button class="btn btn-primary" id="checkoutBtn">Grab & Generate Invoice</button>
+      <button class="btn" id="clearBtn">Clear Cart</button>
+    </div>
+  </aside>
+
+  <!-- CHECKOUT MODAL -->
+  <dialog id="checkoutModal">
+    <form method="dialog" class="form-grid" id="checkoutForm">
+      <h3 style="margin:0 0 8px;font-family:Oswald, sans-serif;letter-spacing:.5px;text-transform:uppercase">Quick Checkout</h3>
+      <p class="help">We’ll generate a PDF invoice and open WhatsApp to complete the order.</p>
+      <div>
+        <label for="custName">Your name</label>
+        <input id="custName" name="name" placeholder="Thandi Nkosi" required />
+      </div>
+      <div>
+        <label for="custEmail">Email (for confirmation)</label>
+        <input id="custEmail" type="email" name="email" placeholder="you@example.com" required />
+      </div>
+      <div>
+        <label for="custPhone">WhatsApp number</label>
+        <input id="custPhone" name="phone" placeholder="+27 71 234 5678" required />
+      </div>
+      <menu style="display:flex;gap:10px;justify-content:flex-end;margin:8px 0 0;padding:0">
+        <button class="btn" value="cancel">Cancel</button>
+        <button class="btn btn-primary" value="confirm">Generate & WhatsApp</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast" role="status" aria-live="polite">Added to cart</div>
+
+  <footer>
+    <div class="foot-inner">
+      <div class="small">© <span id="year"></span> <span id="brand"></span>. All rights reserved.</div>
+      <div class="small">Built as an MVP. No payments on-site yet.</div>
+    </div>
+  </footer>
+
+  <script>
+    /* ==========================================
+       CONFIG — update these for the real client
+       ========================================== */
+    const CONFIG = {
+      brandName: 'GLITCH STREET',   // replace with actual brand name
+      currency: 'ZAR',              // currency code
+      whatsappBusinessNumber: '',   // E.164 format like '+27XXXXXXXXX' (if set, we open direct chat)
+      seller:{
+        name: 'Glitch Street (MVP)',
+        email: 'orders@example.com', // for later email integration
+        vatRate: 0.15,               // 15% VAT example (adjust or set to 0)
+        location: 'South Africa'
+      },
+      email: {                      // Optional EmailJS / serverless later
+        provider: 'emailjs',        // placeholder
+        serviceId: '',              // add when ready
+        templateId: '',             // add when ready
+        publicKey: ''               // add when ready
+      }
+    };
+
+    document.getElementById('brandMark').textContent = CONFIG.brandName;
+    document.getElementById('brand').textContent = CONFIG.brandName;
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    /* ==========================================
+       SAMPLE DATA — 5 placeholder products
+       ========================================== */
+    const products = [
+      { id:'tee-black',  name:'Core Tee — Black',  price: 350,  sku:'GS-TEE-BLK',  image:'https://placehold.co/800x1066/0f0f0f/FFF/png?text=CORE+TEE+BLACK' },
+      { id:'tee-white',  name:'Core Tee — White',  price: 350,  sku:'GS-TEE-WHT',  image:'https://placehold.co/800x1066/111/EEE/png?text=CORE+TEE+WHITE' },
+      { id:'hoodie',     name:'Heavy Hoodie',      price: 790,  sku:'GS-HOOD-001', image:'https://placehold.co/800x1066/121212/F4F4F4/png?text=HEAVY+HOODIE' },
+      { id:'skirt',      name:'High‑waisted Skirt',price: 560,  sku:'GS-SKRT-001', image:'https://placehold.co/800x1066/0e0e0e/EEE/png?text=SKIRT' },
+      { id:'jacket',     name:'Denim Jacket',      price: 920,  sku:'GS-JKT-001',  image:'https://placehold.co/800x1066/151515/EDEDED/png?text=DENIM+JACKET' },
+    ];
+
+    /* ==========================================
+       UTILITIES
+       ========================================== */
+    const fmt = (n) => new Intl.NumberFormat('en-ZA', { style: 'currency', currency: CONFIG.currency }).format(n);
+    const $ = (sel) => document.querySelector(sel);
+    const el = (tag, attrs={}, ...children) => {
+      const node = document.createElement(tag);
+      Object.entries(attrs).forEach(([k,v])=>{
+        if(k.startsWith('on') && typeof v === 'function') node.addEventListener(k.substring(2), v);
+        else if(k==='class') node.className = v; else if(k==='html') node.innerHTML = v; else node.setAttribute(k,v);
+      });
+      children.forEach(c=> node.append(c));
+      return node;
+    };
+
+    /* ==========================================
+       RENDER: PRODUCTS GRID
+       ========================================== */
+    function renderProducts(){
+      const grid = document.getElementById('productGrid');
+      grid.innerHTML = '';
+      products.forEach(p=>{
+        const card = el('article', { class:'card', 'data-id':p.id });
+        const img = el('div', { class:'thumb' }, el('img', { src:p.image, alt:p.name }));
+        const info = el('div', { class:'info' });
+        info.append(
+          el('div', { class:'title' }, p.name),
+          el('div', { class:'price' }, fmt(p.price)),
+          el('div', { class:'add' },
+            el('button', { class:'btn btn-primary', onClick: ()=> addToCart(p.id) }, 'Add to cart'),
+            el('button', { class:'btn btn-ghost', onClick: ()=> quickView(p) }, 'Details')
+          )
+        );
+        card.append(img, info);
+        grid.append(card);
+      });
+    }
+
+    function quickView(p){
+      showToast(`${p.name} — R${p.price} (SKU ${p.sku})`);
+    }
+
+    /* ==========================================
+       CART STATE (localStorage)
+       ========================================== */
+    const CART_KEY = 'glitch_cart_v1';
+    let cart = loadCart();
+
+    function loadCart(){
+      try{ return JSON.parse(localStorage.getItem(CART_KEY)) || []; }catch{ return []; }
+    }
+    function saveCart(){ localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
+
+    function addToCart(id, qty=1){
+      const item = cart.find(l=> l.id === id);
+      if(item) item.qty += qty; else cart.push({ id, qty });
+      saveCart();
+      renderCart();
+      showToast('Added to cart');
+    }
+    function setQty(id, qty){
+      const item = cart.find(l=> l.id === id);
+      if(item){ item.qty = Math.max(1, qty|0); saveCart(); renderCart(); }
+    }
+    function removeLine(id){ cart = cart.filter(l=> l.id !== id); saveCart(); renderCart(); }
+    function clearCart(){ cart = []; saveCart(); renderCart(); }
+
+    function cartTotals(){
+      let subtotal = 0;
+      const lines = cart.map(l=>{
+        const p = products.find(x=> x.id === l.id);
+        const lineTotal = p.price * l.qty;
+        subtotal += lineTotal;
+        return { ...l, name:p.name, price:p.price, sku:p.sku, image:p.image, lineTotal };
+      });
+      const vat = CONFIG.seller.vatRate ? subtotal * CONFIG.seller.vatRate : 0;
+      const total = subtotal + vat;
+      return { lines, subtotal, vat, total };
+    }
+
+    function renderCart(){
+      const { lines, subtotal } = cartTotals();
+      document.getElementById('cartCount').textContent = cart.reduce((a,b)=>a+b.qty,0);
+      document.getElementById('cartTotal').textContent = fmt(subtotal);
+      const box = document.getElementById('cartLines');
+      box.innerHTML = '';
+      if(!lines.length){
+        box.append(el('p', { class:'help'}, 'Your cart is empty.'));
+        return;
+      }
+      lines.forEach(l=>{
+        const pimg = el('img', { src:l.image, alt:l.name, style:'width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #222' });
+        const title = el('div', {}, el('div', { class:'title'}, l.name), el('div', { class:'help'}, `${fmt(l.price)} · ${l.sku}`));
+        const qty = el('div', { class:'qty' },
+          el('button', { onClick:()=> setQty(l.id, l.qty-1) }, '−'),
+          el('input', { value:l.qty, onInput:(e)=> setQty(l.id, e.target.value) }),
+          el('button', { onClick:()=> setQty(l.id, l.qty+1) }, '+')
+        );
+        const rm = el('button', { class:'btn', onClick:()=> removeLine(l.id) }, 'Remove');
+        const line = el('div', { class:'line' });
+        line.append(pimg, title, el('div', {}, qty, el('div', { class:'help', style:'text-align:right;margin-top:6px'}, fmt(l.lineTotal)), rm));
+        box.append(line);
+      });
+    }
+
+    /* ==========================================
+       CHECKOUT — Invoice + WhatsApp + Email stub
+       ========================================== */
+    function openCheckout(){ document.getElementById('checkoutModal').showModal(); }
+
+    async function handleCheckoutSubmit(e){
+      e.preventDefault();
+      const form = document.getElementById('checkoutForm');
+      const data = Object.fromEntries(new FormData(form).entries());
+      const orderId = 'GS' + Date.now();
+      const totals = cartTotals();
+      if(!totals.lines.length){ showToast('Cart is empty'); return; }
+      const pdfBlob = await generateInvoicePDF(orderId, data, totals);
+      downloadBlob(pdfBlob, `invoice-${orderId}.pdf`);
+      openWhatsApp(orderId, data, totals);
+      // Optional: send confirmation email later
+      // await sendOrderEmail(orderId, data, totals);
+      form.closest('dialog').close();
+      clearCart();
+    }
+
+    function downloadBlob(blob, filename){
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function generateInvoicePDF(orderId, customer, totals){
+      // Use jsPDF; fall back to simple text blob if unavailable
+      try{
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const line = (y)=> doc.line(14,y,196,y);
+        let y = 16;
+        doc.setFont('helvetica','bold'); doc.setFontSize(18);
+        doc.text(CONFIG.brandName + ' — Invoice', 14, y); y += 6;
+        doc.setFont('helvetica','normal'); doc.setFontSize(11);
+        doc.text(`Order: ${orderId}`, 14, y); y += 6;
+        doc.text(`Date: ${new Date().toLocaleString()}`, 14, y); y += 10;
+
+        doc.text('Sold by:', 14, y); doc.text(`${CONFIG.seller.name}`, 40, y); y += 6;
+        doc.text('Email:', 14, y); doc.text(`${CONFIG.seller.email}`, 40, y); y += 10;
+
+        doc.text('Bill to:', 14, y); doc.text(`${customer.name}`, 40, y); y += 6;
+        doc.text('Email:', 14, y); doc.text(`${customer.email}`, 40, y); y += 6;
+        doc.text('WhatsApp:', 14, y); doc.text(`${customer.phone}`, 40, y); y += 8; line(y); y += 8;
+
+        doc.setFont('helvetica','bold'); doc.text('Items', 14, y); y += 8; doc.setFont('helvetica','normal');
+        totals.lines.forEach(l=>{
+          doc.text(`${l.name} (${l.sku}) x${l.qty}`, 14, y);
+          doc.text(fmt(l.lineTotal), 170, y, { align:'right' });
+          y += 6;
+        });
+        y += 6; line(y); y += 8;
+        doc.text('Subtotal', 150, y); doc.text(fmt(totals.subtotal), 190, y, { align:'right' }); y += 6;
+        doc.text('VAT', 150, y); doc.text(fmt(totals.vat), 190, y, { align:'right' }); y += 6;
+        doc.setFont('helvetica','bold'); doc.text('Total', 150, y); doc.text(fmt(totals.total), 190, y, { align:'right' }); y += 10;
+
+        doc.setFont('helvetica','normal'); doc.setFontSize(10);
+        doc.text('Payment will be arranged via WhatsApp. Include the Order ID in your message.', 14, y);
+        return doc.output('blob');
+      }catch(err){
+        console.warn('jsPDF not available, falling back', err);
+        const txt = `Invoice ${orderId}\n\n` + JSON.stringify({ customer, totals }, null, 2);
+        return new Blob([txt], { type:'text/plain' });
+      }
+    }
+
+    function openWhatsApp(orderId, customer, totals){
+      const lines = totals.lines.map(l=>`• ${l.name} x${l.qty} — ${fmt(l.lineTotal)}`).join('%0A');
+      const msg = `Hi! I want to pay for my order.%0A%0AOrder ID: ${orderId}%0AName: ${encodeURIComponent(customer.name)}%0AEmail: ${encodeURIComponent(customer.email)}%0A%0AItems:%0A${lines}%0A%0ATotal: ${fmt(totals.total)}%0A`;
+      const base = CONFIG.whatsappBusinessNumber ? `https://wa.me/${CONFIG.whatsappBusinessNumber.replace(/[^\d]/g,'')}` : 'https://wa.me/';
+      window.open(`${base}?text=${msg}`, '_blank');
+    }
+
+    async function sendOrderEmail(orderId, customer, totals){
+      // Placeholder for EmailJS/Netlify. Leaving here for next integration step.
+      // Example EmailJS (requires keys in CONFIG.email):
+      // emailjs.init(CONFIG.email.publicKey);
+      // await emailjs.send(CONFIG.email.serviceId, CONFIG.email.templateId, { orderId, ...customer, json: JSON.stringify(totals) });
+      console.log('Email stub:', { orderId, customer, totals });
+    }
+
+    /* ==========================================
+       UI WIRING
+       ========================================== */
+    renderProducts();
+    renderCart();
+
+    document.getElementById('quickAdd').addEventListener('click', ()=> addToCart('tee-black'));
+    const overlay = document.getElementById('overlay');
+    const drawer  = document.getElementById('cartDrawer');
+    const openBtn = document.getElementById('openCartBtn');
+    const closeBtn= document.getElementById('closeCartBtn');
+
+    function openCart(){ overlay.classList.add('show'); drawer.classList.add('show'); openBtn.setAttribute('aria-expanded','true'); }
+    function closeCart(){ overlay.classList.remove('show'); drawer.classList.remove('show'); openBtn.setAttribute('aria-expanded','false'); }
+
+    openBtn.addEventListener('click', openCart);
+    closeBtn.addEventListener('click', closeCart);
+    overlay.addEventListener('click', closeCart);
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeCart(); });
+
+    document.getElementById('clearBtn').addEventListener('click', clearCart);
+    document.getElementById('checkoutBtn').addEventListener('click', ()=>{
+      if(!cart.length){ showToast('Your cart is empty'); return; }
+      openCheckout();
+    });
+    document.getElementById('checkoutForm').addEventListener('submit', handleCheckoutSubmit);
+
+    function showToast(text){
+      const t = document.getElementById('toast');
+      t.textContent = text; t.classList.add('show');
+      setTimeout(()=> t.classList.remove('show'), 1400);
+    }
+  </script>
+</body>
+</html>
