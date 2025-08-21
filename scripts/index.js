@@ -1,3 +1,6 @@
+import products from "./products.js";
+
+
 /* ==========================================
     CONFIG — update these for the real client
     ========================================== */
@@ -24,17 +27,6 @@
     document.getElementById('year').textContent = new Date().getFullYear();
 
     /* ==========================================
-       SAMPLE DATA — 5 placeholder products
-       ========================================== */
-    const products = [
-        { id:'tee-black',  name:'Core Tee — Black',  price: 350,  sku:'GS-TEE-BLK',  image:'https://placehold.co/800x1066/0f0f0f/FFF/png?text=CORE+TEE+BLACK' },
-        { id:'tee-white',  name:'Core Tee — White',  price: 350,  sku:'GS-TEE-WHT',  image:'https://placehold.co/800x1066/111/EEE/png?text=CORE+TEE+WHITE' },
-        { id:'hoodie',     name:'Heavy Hoodie',      price: 790,  sku:'GS-HOOD-001', image:'https://placehold.co/800x1066/121212/F4F4F4/png?text=HEAVY+HOODIE' },
-        { id:'skirt',      name:'High‑waisted Skirt',price: 560,  sku:'GS-SKRT-001', image:'https://placehold.co/800x1066/0e0e0e/EEE/png?text=SKIRT' },
-        { id:'jacket',     name:'Denim Jacket',      price: 920,  sku:'GS-JKT-001',  image:'https://placehold.co/800x1066/151515/EDEDED/png?text=DENIM+JACKET' },
-    ];
-
-    /* ==========================================
        UTILITIES
        ========================================== */
     const fmt = (n) => new Intl.NumberFormat('en-ZA', { style: 'currency', currency: CONFIG.currency }).format(n);
@@ -53,7 +45,7 @@
        RENDER: PRODUCTS GRID
        ========================================== */
     function renderProducts(){
-        const grid = document.getElementById('productGrid');
+        const grid = document.getElementById('catalog');
         grid.innerHTML = '';
         products.forEach(p=>{
             const card = el('article', { class:'card', 'data-id':p.id });
