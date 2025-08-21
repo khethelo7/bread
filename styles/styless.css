@@ -4,14 +4,20 @@ RESET & THEME TOKENS
 *,*::before,*::after{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--ink);}
-:root{
-    --bg:#0b0b0b;           /* pitch black-ish */
-    --surface:#111;         /* cards */
-    --ink:#f1f1f1;
-    --muted:#b3b3b3;
-    --accent:#4df2c7;       /* toxic mint */
-    --accent-2:#ff3b3b;     /* skate red */
-    --ring:0 0 0 2px rgba(77,242,199,.35);
+:root {
+    --bg:#0b0b0b;           /* pitch black base */
+    --surface:#111;         /* cards / panels */
+    --ink:#f5f5f5;          /* main text */
+    --muted:#b3b3b3;        /* secondary text */
+
+    /* Brand accents */
+    --accent:#e31b23;       /* skate red (primary accent) */
+    --accent-2:#2e5e3a;     /* muted forest green */
+    --accent-3:#f3c6c6;     /* soft dusty pink */
+    --accent-4:#5a3a2e;     /* earthy brown */
+
+    /* Utility */
+    --ring:0 0 0 2px rgba(227,27,35,.35); /* subtle red glow */
 }
 
 /* Noise + subtle grit overlay for grunge feel */
