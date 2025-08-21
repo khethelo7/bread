@@ -48,7 +48,7 @@ import products from "./products.js";
         const grid = document.getElementById('catalog');
         grid.innerHTML = '';
         products.forEach(p=>{
-            const card = el('article', { class:'card', 'data-id':p.id });
+            const card = el('article', { class:'card product-card', 'data-id':p.id });
             const img = el('div', { class:'thumb' }, el('img', { src:p.image, alt:p.name }));
             const info = el('div', { class:'info' });
             info.append(
