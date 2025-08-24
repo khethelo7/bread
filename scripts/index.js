@@ -128,7 +128,10 @@ import products from "./products.js";
         const item = cart.find(l=> l.id === id);
         if(item){ item.qty = Math.max(1, qty|0); saveCart(); renderCart(); }
     }
-    function removeLine(id){ cart = cart.filter(l=> l.id !== id); saveCart(); renderCart(); }
+    function removeLine(id){
+        cart = cart.filter(item => item.id !== id);
+        renderCart();
+    }
     function clearCart(){ cart = []; saveCart(); renderCart(); }
 
     function cartTotals(){
@@ -180,11 +183,11 @@ import products from "./products.js";
                 el('div', { class:'help'}, `${fmt(l.price)} · ${l.sku}`)
             );
             const qty = el('div', { class:'qty' },
-                el('button', { onClick:()=> setQty(l.id, l.qty-1) }, '−'),
+                el('button', { onclick:()=> setQty(l.id, l.qty-1) }, '−'),
                 el('input', { value:l.qty, onInput:(e)=> setQty(l.id, e.target.value) }),
-                el('button', { onClick:()=> setQty(l.id, l.qty+1) }, '+')
+                el('button', { onclick:()=> setQty(l.id, l.qty+1) }, '+')
             );
-            const rm = el('button', { class:'btn', onClick:()=> removeLine(l.id) }, 'Remove');
+            const rm = el('button', { class:'btn', onclick:()=> removeLine(l.id) }, 'Remove');
             const line = el('div', { class:'line' });
             line.append(pimg, title, el('div', {}, qty, el('div', { class:'help', style:'text-align:right;margin-top:6px'}, fmt(l.lineTotal)), rm));
             box.append(line);
