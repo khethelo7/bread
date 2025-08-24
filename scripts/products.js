@@ -15,30 +15,37 @@ const products = [
     {
         id: '1',
         name: 'BREAD Essential HOODIE',
-        price: 499.99,
+        price: 500,
         image: 'assets/bread-hoodie.png',
-        description: ''
+        description: 'LOL'
     },
     {
         id: '2',
         name: 'BREADBUN BEANIE',
-        price: 149.99,
+        price: 150,
         image: 'assets/bread-bun.png',
-        description: ''
+        description: 'LOL'
     },
     {
         id: '3',
         name: 'DOUGHCOUNTER T-SHIRT',
-        price: 199.99,
+        price: 200,
         image: 'assets/dough-counter.png',
-        description: ''
+        description: 'LOL'
     },
     {
         id: '4',
         name: 'BREAD CAP',
-        price: 149.99,
+        price: 150,
         image: 'assets/bread-cap.png',
-        description: ''
+        description: 'LOL'
+    },
+    {
+        id: '5',
+        name: 'BREAD Sample Tee',
+        price: 90,
+        image: 'assets/bread-cap.png',
+        description: 'LOL'
     }
 ]
 
