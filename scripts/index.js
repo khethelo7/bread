@@ -55,8 +55,8 @@ import products from "./products.js";
                     el('div', { class:'title' }, p.name),
                     el('div', { class:'price' }, fmt(p.price)),
                     el('div', { class:'add' },
-                        el('button', { class:'btn btn-primary', onClick: ()=> addToCart(p.id) }, 'Add to cart'),
-                        el('button', { class:'btn btn-ghost', onClick: ()=> quickView(p) }, 'Details')
+                        el('button', { class:'btn btn-primary', onclick: ()=> addToCart(p.id) }, 'Add to cart'),
+                        el('button', { class:'btn btn-ghost', onclick: ()=> quickView(p) }, 'Details')
                     )
             );
             card.append(img, info);
@@ -65,23 +65,61 @@ import products from "./products.js";
     }
 
     function quickView(p){
-        showToast(`${p.name} — R${p.price} (SKU ${p.sku})`);
+        const dlg = document.getElementById('productModal');
+        if(!dlg){ showToast('Product modal missing'); return; }
+
+        $('#pmTitle').textContent = p.name;
+        const img = $('#pmImg');
+        img.src = p.image; img.alt = p.name;
+
+        $('#pmDesc').textContent = p.description || 'No description available.';
+        $('#pmPrice').textContent = fmt(p.price);
+
+        $('#pmAdd').onclick = ()=> { addToCart(p.id); dlg.close(); };
+        $('#pmClose').onclick = ()=> dlg.close();
+
+        dlg.addEventListener('click', (e)=>{
+            const rect = dlg.querySelector('article').getBoundingClientRect();
+            const inside = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+            if(!inside) dlg.close();
+        }, { once:true });
+
+        dlg.showModal();
     }
+
+
 
     /* ==========================================
        CART STATE (localStorage)
        ========================================== */
     const CART_KEY = 'glitch_cart_v1';
     let cart = loadCart();
+    sanitizeCart();
 
     function loadCart(){
-        try{ return JSON.parse(localStorage.getItem(CART_KEY)) || []; }catch{ return []; }
+        try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; }
+        catch { return []; }
     }
     function saveCart(){ localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
 
+    function sanitizeCart(){
+        const validIds = new Set(products.map(p => p.id));
+        cart = cart
+            .filter(l => validIds.has(l.id))
+            .map(l => ({ id: l.id, qty: Math.max(1, Number(l.qty) || 1) }));
+        saveCart();
+    }
     function addToCart(id, qty=1){
-        const item = cart.find(l=> l.id === id);
-        if(item) item.qty += qty; else cart.push({ id, qty });
+        const p = products.find(x => x.id === id);
+        if(!p){ 
+            console.warn('addToCart: product not found', id); 
+            showToast('Item not available'); 
+            return; 
+        }
+        const line = cart.find(l => l.id === id);
+        if(line) { line.qty += qty; }
+        else { cart.push({ id, qty }); }
+
         saveCart();
         renderCart();
         showToast('Added to cart');
@@ -95,39 +133,61 @@ import products from "./products.js";
 
     function cartTotals(){
         let subtotal = 0;
-        const lines = cart.map(l=>{
-            const p = products.find(x=> x.id === l.id);
+        const lines = [];
+
+        for(const l of cart){
+            const p = products.find(x => x.id === l.id);
+            if(!p) continue; // skip unknown IDs safely
+
             const lineTotal = p.price * l.qty;
             subtotal += lineTotal;
-            return { ...l, name:p.name, price:p.price, sku:p.sku, image:p.image, lineTotal };
-        });
-      const vat = CONFIG.seller.vatRate ? subtotal * CONFIG.seller.vatRate : 0;
-      const total = subtotal + vat;
-      return { lines, subtotal, vat, total };
-    }
+            lines.push({
+                ...l,
+                name: p.name,
+                price: p.price,
+                sku: p.sku || '',
+                image: p.image,
+                lineTotal
+            });
+        }
+        const vat = CONFIG.seller.vatRate ? subtotal * CONFIG.seller.vatRate : 0;
+        const total = subtotal + vat;
+        return { lines, subtotal, vat, total };
+    }   
 
     function renderCart(){
-        const { lines, subtotal } = cartTotals();
-        document.getElementById('cartCount').textContent = cart.reduce((a,b)=>a+b.qty,0);
-        document.getElementById('cartTotal').textContent = fmt(subtotal);
+        const totals = cartTotals();
+        const lines = totals.lines || [];
+
+        const countEl = document.getElementById('cartCount');
+        const totalEl = document.getElementById('cartTotal');
+        if (countEl) countEl.textContent = cart.reduce((a,b)=> a + (Number(b.qty)||0), 0);
+        if (totalEl) totalEl.textContent = fmt(totals.subtotal);
+
         const box = document.getElementById('cartLines');
+        if(!box) return; // not on this page
+
         box.innerHTML = '';
-        if(!lines.length){
+        if(lines.length === 0){
             box.append(el('p', { class:'help'}, 'Your cart is empty.'));
             return;
         }
+
         lines.forEach(l=>{
-                const pimg = el('img', { src:l.image, alt:l.name, style:'width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #222' });
-                const title = el('div', {}, el('div', { class:'title'}, l.name), el('div', { class:'help'}, `${fmt(l.price)} · ${l.sku}`));
-                const qty = el('div', { class:'qty' },
-                    el('button', { onClick:()=> setQty(l.id, l.qty-1) }, '−'),
-                    el('input', { value:l.qty, onInput:(e)=> setQty(l.id, e.target.value) }),
-                    el('button', { onClick:()=> setQty(l.id, l.qty+1) }, '+')
-                );
-                const rm = el('button', { class:'btn', onClick:()=> removeLine(l.id) }, 'Remove');
-                const line = el('div', { class:'line' });
-                line.append(pimg, title, el('div', {}, qty, el('div', { class:'help', style:'text-align:right;margin-top:6px'}, fmt(l.lineTotal)), rm));
-                box.append(line);
+            const pimg = el('img', { src:l.image, alt:l.name, style:'width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #222' });
+            const title = el('div', {}, 
+                el('div', { class:'title'}, l.name), 
+                el('div', { class:'help'}, `${fmt(l.price)} · ${l.sku}`)
+            );
+            const qty = el('div', { class:'qty' },
+                el('button', { onClick:()=> setQty(l.id, l.qty-1) }, '−'),
+                el('input', { value:l.qty, onInput:(e)=> setQty(l.id, e.target.value) }),
+                el('button', { onClick:()=> setQty(l.id, l.qty+1) }, '+')
+            );
+            const rm = el('button', { class:'btn', onClick:()=> removeLine(l.id) }, 'Remove');
+            const line = el('div', { class:'line' });
+            line.append(pimg, title, el('div', {}, qty, el('div', { class:'help', style:'text-align:right;margin-top:6px'}, fmt(l.lineTotal)), rm));
+            box.append(line);
         });
     }
 
@@ -221,7 +281,7 @@ import products from "./products.js";
     renderProducts();
     renderCart();
 
-    document.getElementById('quickAdd').addEventListener('click', ()=> addToCart('tee-black'));
+    document.getElementById('quickAdd').addEventListener('click', ()=> addToCart('5'));
     const overlay = document.getElementById('overlay');
     const drawer  = document.getElementById('cartDrawer');
     const openBtn = document.getElementById('openCartBtn');
