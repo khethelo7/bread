@@ -1,5 +1,7 @@
-import products from "./products.js";
+import { productsA, productsB } from "./products.js";
 
+let products = productsA; // default to productsA
+let currentBrand = 'bread';
 
 /* ==========================================
     CONFIG — update these for the real client
@@ -22,6 +24,9 @@ import products from "./products.js";
         }
     };
 
+    document.getElementById("brandSwitch").addEventListener("change", (e) => {
+        switchBrand(e.target.checked);
+    });
     document.getElementById('brandMark').textContent = CONFIG.brandName;
     document.getElementById('brand').textContent = CONFIG.brandName;
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -124,9 +129,16 @@ import products from "./products.js";
         renderCart();
         showToast('Added to cart');
     }
-    function setQty(id, qty){
-        const item = cart.find(l=> l.id === id);
-        if(item){ item.qty = Math.max(1, qty|0); saveCart(); renderCart(); }
+    function setQty(id, qty) {
+        qty = parseInt(qty, 10);  // force to number
+        if (isNaN(qty) || qty < 1) qty = 1;
+
+        const item = cart.find(l => l.id === id);
+        if(item){ 
+            item.qty = qty; 
+            saveCart(); 
+            renderCart(); 
+        }
     }
     function removeLine(id){
         cart = cart.filter(item => item.id !== id);
@@ -184,7 +196,7 @@ import products from "./products.js";
             );
             const qty = el('div', { class:'qty' },
                 el('button', { onclick:()=> setQty(l.id, l.qty-1) }, '−'),
-                el('input', { value:l.qty, onInput:(e)=> setQty(l.id, e.target.value) }),
+                el('input', { value:l.qty, readOnly: true }),
                 el('button', { onclick:()=> setQty(l.id, l.qty+1) }, '+')
             );
             const rm = el('button', { class:'btn', onclick:()=> removeLine(l.id) }, 'Remove');
@@ -193,6 +205,25 @@ import products from "./products.js";
             box.append(line);
         });
     }
+
+    function switchBrand(isButter) {
+        if (isButter) {
+            products = productsB;
+            currentBrand = 'butter';
+            document.body.classList.add('brand-butter');
+            document.body.classList.remove('brand-bread');
+            showToast('Switched to Butter Brand');
+        } else {
+            products = productsA;
+            currentBrand = 'bread';
+            document.body.classList.add('brand-bread');
+            document.body.classList.remove('brand-butter');
+            showToast('Switched to Bread Brand');
+        }
+        renderProducts();
+        renderCart();
+    }
+
 
     /* ==========================================
        CHECKOUT — Invoice + WhatsApp + Email stub
