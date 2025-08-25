@@ -11,7 +11,7 @@
     BREAD CAP White
 */
 
-const products = [
+export const productsA = [
     {
         id: '1',
         name: 'BREAD Essential HOODIE',
@@ -49,5 +49,26 @@ const products = [
     }
 ]
 
-
-export default products;
+export const productsB = [
+    {
+        id: '10',
+        name: 'BREAD Essential HOODIE Black',
+        price: 500,
+        image: 'assets/bread-hoodie.png',
+        description: 'LOL'
+    },
+    {
+        id: '20',
+        name: 'BREAD Essential HOODIE Brown',
+        price: 500,
+        image: 'assets/bread-hoodie.png',
+        description: 'LOL'
+    },
+    {
+        id: '3',
+        name: 'BREAD Essential HOODIE Red',
+        price: 500,
+        image: 'assets/bread-hoodie.png',
+        description: 'LOL'
+    }
+]
